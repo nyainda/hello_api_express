@@ -10,6 +10,16 @@ function getRandomTemperature() {
 // Array of sample cities
 const cities = ['New York', 'London', 'Tokyo', 'Paris', 'Sydney', 'Berlin', 'Moscow', 'Rio de Janeiro', 'Cairo', 'Mumbai'];
 
+// Function to get client IP address
+function getClientIp(req) {
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (xForwardedFor) {
+    const ipAddresses = xForwardedFor.split(',').map(ip => ip.trim());
+    return ipAddresses[0];
+  }
+  return req.ip;
+}
+
 // Root route
 app.get('/', (req, res) => {
   res.send('Welcome to the Hello API. Use /api/hello?visitor_name=YourName to access the API.');
@@ -17,11 +27,12 @@ app.get('/', (req, res) => {
 
 // Hello API route
 app.get('/api/hello', (req, res) => {
-  const visitorName = req.query.visitor_name || 'Guest';
-  const clientIp = req.ip === '::1' || req.ip === '127.0.0.1' ? '127.0.0.1' : req.ip;
-  const city = cities[Math.floor(Math.random() * cities.length)];
-  const temperature = getRandomTemperature();
+  const visitorName = req.query.visitor_name || 'Guest'; // Get visitor name from query parameter or default to 'Guest'
+  const clientIp = getClientIp(req); // Get the client's IP address
+  const city = cities[Math.floor(Math.random() * cities.length)]; // Select a random city
+  const temperature = getRandomTemperature(); // Generate a random temperature
 
+  // Respond with the JSON structure
   res.json({
     client_ip: clientIp,
     location: city,
@@ -29,6 +40,7 @@ app.get('/api/hello', (req, res) => {
   });
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
