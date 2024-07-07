@@ -36,6 +36,14 @@ class Organisation {
     );
     return result.rows;
   }
+
+  static async hasUser(orgId, userId) {
+    const result = await db.query(
+      'SELECT * FROM user_organisations WHERE org_id = $1 AND user_id = $2',
+      [orgId, userId]
+    );
+    return result.rows.length > 0;
+  }
 }
 
 module.exports = Organisation;

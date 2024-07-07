@@ -270,4 +270,133 @@ describe('Authentication and Authorization', () => {
     expect(orgRes.body.data.organisations.length).toBe(1);
     expect(orgRes.body.data.organisations[0].name).toBe("Eve's Organisation");
   });
+
+   it('Should add a user to an organisation successfully', async () => {
+    // Register two users
+    const res1 = await request(app)
+      .post('/auth/register')
+      .send({
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@example.com',
+        password: 'adminpass123',
+        phone: '1111111111',
+      });
+
+    const res2 = await request(app)
+      .post('/auth/register')
+      .send({
+        firstName: 'Normal',
+        lastName: 'User',
+        email: 'normal@example.com',
+        password: 'normalpass123',
+        phone: '2222222222',
+      });
+
+    const adminToken = res1.body.data.accessToken;
+    const normalUserId = res2.body.data.user.userId;
+
+    // Get the admin's organisation
+    const orgRes = await request(app)
+      .get('/api/organisations')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const orgId = orgRes.body.data.organisations[0].org_id;
+
+    // Add the normal user to the admin's organisation
+    const addUserRes = await request(app)
+      .post(`/api/organisations/${orgId}/users`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: normalUserId });
+
+    expect(addUserRes.statusCode).toBe(200);
+    expect(addUserRes.body.status).toBe('success');
+    expect(addUserRes.body.message).toBe('User added to organisation successfully');
+
+    // Verify that the normal user can now see the organisation
+    const normalUserToken = res2.body.data.accessToken;
+    const normalUserOrgRes = await request(app)
+      .get('/api/organisations')
+      .set('Authorization', `Bearer ${normalUserToken}`);
+
+    expect(normalUserOrgRes.statusCode).toBe(200);
+    expect(normalUserOrgRes.body.data.organisations.length).toBe(2); // Their own org and the added org
+    expect(normalUserOrgRes.body.data.organisations.some(org => org.org_id === orgId)).toBe(true);
+  });
+
+  it('Should not add a user to an organisation they are already part of', async () => {
+    // Use the admin user from the previous test
+    const loginRes = await request(app)
+      .post('/auth/login')
+      .send({
+        email: 'admin@example.com',
+        password: 'adminpass123',
+      });
+
+    const adminToken = loginRes.body.data.accessToken;
+
+    // Get the admin's organisation
+    const orgRes = await request(app)
+      .get('/api/organisations')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const orgId = orgRes.body.data.organisations[0].org_id;
+    const adminUserId = loginRes.body.data.user.userId;
+
+    // Try to add the admin to their own organisation again
+    const addUserRes = await request(app)
+      .post(`/api/organisations/${orgId}/users`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: adminUserId });
+
+    expect(addUserRes.statusCode).toBe(400);
+    expect(addUserRes.body.status).toBe('error');
+    expect(addUserRes.body.message).toBe('User is already in the organisation');
+  });
+
+  it('Should fetch a single organisation by ID for the logged-in user', async () => {
+    // Register a user
+    const registerRes = await request(app)
+      .post('/auth/register')
+      .send({
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'testuser@example.com',
+        password: 'password123',
+        phone: '1234567890',
+      });
+  
+    const token = registerRes.body.data.accessToken;
+  
+    // Get all organisations for the user
+    const allOrgsRes = await request(app)
+      .get('/api/organisations')
+      .set('Authorization', `Bearer ${token}`);
+  
+    // Get the ID of the first organisation
+    const orgId = allOrgsRes.body.data.organisations[0].org_id;
+  
+    // Fetch the single organisation by ID
+    const singleOrgRes = await request(app)
+      .get(`/api/organisations/${orgId}`)
+      .set('Authorization', `Bearer ${token}`);
+  
+    // Assert the response structure and content
+    expect(singleOrgRes.statusCode).toBe(200);
+    expect(singleOrgRes.body).toEqual({
+      status: 'success',
+      message: expect.any(String),
+      data: {
+        org_id: expect.any(String),
+        name: expect.any(String),
+        description: expect.any(String),
+        created_at: expect.any(String),
+        updated_at: expect.any(String),
+      }
+    });
+  
+    // Assert that the returned organisation matches the requested one
+    expect(singleOrgRes.body.data.org_id).toBe(orgId);
+    expect(singleOrgRes.body.data.name).toBe("Test's Organisation");
+  });
 });
