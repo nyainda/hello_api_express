@@ -1,10 +1,10 @@
 /* eslint-disable camelcase */
 
 exports.up = (pgm) => {
-    // Ensure the 'uuid-ossp' extension exists, which provides the 'uuid_generate_v4()' function
+    
     pgm.createExtension('uuid-ossp', { ifNotExists: true });
     
-    // Create the 'users' table with appropriate columns and constraints
+    
     pgm.createTable('users', {
       user_id: { type: 'uuid', primaryKey: true, default: pgm.func('uuid_generate_v4()') },
       first_name: { type: 'varchar(255)', notNull: true },

@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Organisation = require('../models/Organisation');
-
+const config = require('../config');
 exports.register = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
     // Link user to organisation
     await Organisation.addUser(org.org_id, user.user_id);
 
-    const token = jwt.sign({ userId: user.user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.user_id, email: user.email }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRATION});
 
     res.status(201).json({
       status: 'success',
@@ -61,7 +61,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ userId: user.user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.user_id, email: user.email }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRATION});
 
     res.status(200).json({
       status: 'success',
