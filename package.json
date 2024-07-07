@@ -4,11 +4,13 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "npm run migrate up && node server.js",
+    "start": "node server.js",
+    "dev": "npm run migrate up && node server.js",
     "migrate": "node-pg-migrate up",
     "migrate-down": "node-pg-migrate down",
     "migrate-reset": "node-pg-migrate reset",
-    "test": "jest --forceExit --detectOpenHandles"
+    "test": "jest --forceExit --detectOpenHandles",
+    "build": "npm run migrate"
   },
   "keywords": [],
   "author": "",
